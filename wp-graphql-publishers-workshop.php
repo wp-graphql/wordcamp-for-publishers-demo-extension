@@ -91,6 +91,7 @@ add_action( 'graphql_post_fields', function( $fields ) {
 add_action( 'init', function() {
 	register_post_type( 'book', [
 		'label' => __( 'Books', 'wp-graphql-publishers' ),
+		'supports' => [ 'title', 'editor', 'custom-fields' ],
 		'public' => true,
 		'show_in_graphql' => true,
 		'graphql_single_name' => 'book',
@@ -146,3 +147,54 @@ add_action( 'init', function() {
 		'hierarchical' => true,
 	]);
 } );
+
+/**
+ * Add a "price" field to our "book" post so that it's queryable and mutable.
+ *
+ * We can now mutate the "price" field like so:
+ * NOTE: "Ym9vazoyOTIw" = base64_encode( 'book:2920' );
+ *
+ * mutation {
+ *   updateBook(input:{
+ *     clientMutationId: "someIdFromTheClient"
+ *     id: "Ym9vazoyOTIw"
+ *     price: "9.99"
+ *   }){
+ *      id
+ *      price
+ *   }
+ * }
+ *
+ * This will update the book and set it's "price" postmeta to "9.99"
+ */
+
+// add the field to the "type" definition so that it's queryable
+add_action( 'graphql_book_fields', function( $fields ) {
+	$fields['price'] = [
+		'type' => \WPGraphQL\Types::string(),
+		'description' => __( 'The price of the book', 'wp-graphql-publishers' ),
+		'resolve' => function( \WP_Post $book ) {
+			$price = get_post_meta( $book->ID, 'price', true );
+			return ! empty( $price ) ? $price : null;
+		},
+	];
+	return $fields;
+}, 10, 1);
+
+// add the type to the "mutation" input fields so that it's an accepted input value on the mutation
+add_action( 'graphql_post_object_mutation_input_fields', function( $fields, \WP_Post_Type $post_type_object ) {
+	if ( 'book' === $post_type_object->name ) {
+		$fields['price'] = [
+			'type'        => \WPGraphQL\Types::string(),
+			'description' => __( 'The price of the book', 'wp-graphql-publishers' ),
+		];
+	}
+	return $fields;
+}, 10, 2 );
+
+// update the postmeta value during the mutation process
+add_action( 'graphql_post_object_mutation_update_additional_data', function( $post_id, $input, \WP_Post_Type $post_type_object ) {
+	if ( 'book' === $post_type_object->name && ! empty( $input['price'] ) ) {
+		update_post_meta( $post_id, 'price', $input['price'] );
+	}
+}, 10, 3 );
