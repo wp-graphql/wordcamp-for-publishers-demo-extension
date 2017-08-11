@@ -97,3 +97,52 @@ add_action( 'init', function() {
 		'graphql_plural_name' => 'books',
 	] );
 } );
+
+/**
+ * Register custom taxonomy "genre" connected to the "book" post type
+ *
+ * This can be queried like so:
+ *
+ * {
+ *   genres {
+ *     edges {
+ *       node {
+ *         id
+ *         name
+ *       }
+ *     }
+ *   }
+ * }
+ *
+ * or now we can query genres as a field of the book nodes:
+ *
+ * {
+ *   books {
+ *     edges {
+ *       node {
+ *         id
+ *         title
+ *         genres {
+ *           edges {
+ *             node {
+ *               id
+ *               name
+ *             }
+ *           }
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ *
+ */
+add_action( 'init', function() {
+	register_taxonomy( 'genre', 'book', [
+		'label' => __( 'Genre' ),
+		'public' => true,
+		'show_in_graphql' => true,
+		'graphql_single_name' => 'genre',
+		'graphql_plural_name' => 'genres',
+		'hierarchical' => true,
+	]);
+} );
