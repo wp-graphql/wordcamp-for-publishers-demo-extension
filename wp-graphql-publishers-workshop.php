@@ -70,3 +70,30 @@ add_action( 'graphql_post_fields', function( $fields ) {
 	];
 	return $fields;
 }, 10, 1);
+
+/**
+ * Register a new Post Type and add it to the GraphQL Schema
+ *
+ * These can be queried like so:
+ *
+ * {
+ *   books {
+ *     edges {
+ *       node {
+ *         id
+ *         title
+ *       }
+ *     }
+ *   }
+ * }
+ *
+ */
+add_action( 'init', function() {
+	register_post_type( 'book', [
+		'label' => __( 'Books', 'wp-graphql-publishers' ),
+		'public' => true,
+		'show_in_graphql' => true,
+		'graphql_single_name' => 'book',
+		'graphql_plural_name' => 'books',
+	] );
+} );
