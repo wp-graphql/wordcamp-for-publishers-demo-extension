@@ -198,3 +198,58 @@ add_action( 'graphql_post_object_mutation_update_additional_data', function( $po
 		update_post_meta( $post_id, 'price', $input['price'] );
 	}
 }, 10, 3 );
+
+/**
+ * Include our "syndicatedBook" type.
+ * Since it extends classes registered by WPGraphQL, we want to include it after WPGraphQL has been loaded, which is
+ * why we hook into the "graphql_init" action to include the file
+ */
+add_action( 'graphql_init', function() {
+	require_once dirname( __FILE__ ) . '/inc/Type/SyndicatedBook.php';
+} );
+
+/**
+ * Filter the root query to add an entry to get a list of "syndicated books"
+ *
+ * @todo: Right now, we're just resolving to a static array for simplicity. We'll change this to a remote request.
+ */
+add_action( 'graphql_root_queries', function( $fields ) {
+	$fields['syndicatedBooks'] = [
+		'type' => \WPGraphQL\Types::list_of( new SyndicatedBook() ),
+		'description' => __( 'Get a list of syndicated books', 'wp-graphql-publishers' ),
+		'resolve' => function() {
+
+			$sources = [
+				'http://wpgraphqlpub1.wpengine.com/graphql',
+				'http://wpgraphqlpub2.wpengine.com/graphql',
+			];
+
+			$books = [];
+
+			foreach ( $sources as $source ) {
+				$response = wp_remote_post( $source, [
+					'body' => [
+						'query' => '
+							query {
+								books {
+									id
+									title
+									price
+									sourceName
+								}
+							}
+						',
+					],
+				]);
+
+				/**
+				 * If we received books back from the request, merge them into our response
+				 */
+				$books = ! empty( $response['data']['books'] ) && is_array( $response['data']['books'] ) ? array_merge( $books, $response['data']['books'] ) : $books;
+			}
+
+			return $books;
+		},
+	];
+	return $fields;
+} );
