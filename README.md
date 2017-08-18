@@ -11,3 +11,7 @@ First, make sure you have WPGraphQL (v0.0.15+) installed and activated.
 Then clone or download this repo into your WordPress install's `/wp-content/plugins` directory. 
 
 Activate the plugin.
+
+## Workshop Slides
+
+The slides for the workshop this was part of are here: http://slides.com/jasonbahl-1/content-syndication
